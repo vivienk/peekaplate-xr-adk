@@ -1,0 +1,59 @@
+name: Build PICO APK
+on:
+  workflow_dispatch:
+  push:
+    paths: ['pico/**', 'public/supplied-dishes/**', 'src/glimmer/supplied-dishes.json', '.github/workflows/pico-apk.yml']
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out original XR assets when building the native-only branch
+        if: ${{ hashFiles('src/glimmer/supplied-dishes.json') == '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: vivienk/peekaplate-xr
+          ref: 5df77776d0ea9e2122d464d047e4f74fd4dc5e70
+          path: xr-source
+          sparse-checkout: |
+            public/supplied-dishes
+            src/glimmer
+      - name: Stage and verify bundled dishes
+        run: |
+          if [ -d xr-source ]; then
+            mkdir -p public src/glimmer
+            cp -R xr-source/public/supplied-dishes public/
+            cp xr-source/src/glimmer/supplied-dishes.json src/glimmer/
+          fi
+          sha256sum -c pico/menu-assets.sha256
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify PICO CLI 0.7
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pico-cli" @picoxr/pico-cli@0.7
+          cd "$RUNNER_TEMP/pico-cli"
+          node -e 'const p=require("./node_modules/@picoxr/pico-cli/package.json"); if(!/^0\.7\./.test(p.version))throw Error(p.version); console.log(p.name,p.version);const bin=typeof p.bin==="string"?p.bin:Object.values(p.bin)[0];require("child_process").execFileSync(process.execPath,["node_modules/@picoxr/pico-cli/"+bin,"--version"],{stdio:"inherit"})'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Resolve stable PICO Spatial SDK and build APK
+        working-directory: pico
+        run: |
+          curl -fsSL https://artifact.bytedance.com/repository/Volcengine/com/pico/spatial/bom/maven-metadata.xml -o "$RUNNER_TEMP/pico-bom.xml"
+          SDK_VERSION=$(python3 -c 'import re,sys,xml.etree.ElementTree as E; versions=[v.text for v in E.parse(sys.argv[1]).findall(".//versions/version") if re.fullmatch(r"[0-9]+(?:\.[0-9]+)+",v.text or "")]; print(max(versions,key=lambda v:tuple(map(int,v.split(".")))))' "$RUNNER_TEMP/pico-bom.xml")
+          echo "PICO Spatial SDK $SDK_VERSION"
+          gradle -PpicoSpatialSdk="$SDK_VERSION" :app:assembleDebug
+          cd app/build/outputs/apk/debug
+          sha256sum app-debug.apk > SHA256SUMS
+          echo "$GITHUB_SHA SDK=$SDK_VERSION" > BUILD.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PeekaPlate-PICO-${{ github.sha }}
+          path: pico/app/build/outputs/apk/debug/
