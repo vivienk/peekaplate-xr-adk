@@ -1,6 +1,8 @@
 package com.peekaplate.market
 
 import android.app.Application
+import android.content.Intent
+import android.os.Bundle
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,11 +22,22 @@ import com.pico.spatial.ui.foundation.dsl.*
 import com.pico.spatial.ui.platform.stub.SpatialLaunchActivity
 import org.json.JSONArray
 
-class LaunchActivity : SpatialLaunchActivity()
+private var requestedModel by mutableStateOf<String?>(null)
+
+class LaunchActivity : SpatialLaunchActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        requestedModel = intent.getStringExtra("model")
+        super.onCreate(savedInstanceState)
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        requestedModel = intent.getStringExtra("model")
+    }
+}
 class MarketApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        launch(::marketApp)
+        if (getProcessName() == packageName) launch(::marketApp)
     }
 }
 
@@ -49,7 +62,7 @@ private fun menu(context: Context): List<Dish> {
 private fun Market() {
     val context = LocalContext.current
     val dishes = remember { menu(context) }
-    var route by remember { mutableStateOf(MarketRoute()) }
+    var route by remember(requestedModel) { mutableStateOf(MarketRoute(requestedModel, requestedModel != null)) }
     val selected = dishes.find { it.model == route.model }
     val portion = route.portion
     var rotation by remember { mutableFloatStateOf(0f) }
@@ -112,8 +125,13 @@ private fun Market() {
                                 Text(if (!ready) "Loading portion…" else if (models.containsKey(dish.model)) "View portion" else "Portion unavailable")
                             }
                         }
-                        Button(onClick = { route = route.back() }) {
-                            Text(if (portion) "Back to dish" else "Back to night market")
+                        Button(onClick = {
+                            if (requestedModel != null) {
+                                context.startActivity(Intent(context, GameActivity::class.java).addFlags(
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                            } else route = route.back()
+                        }) {
+                            Text(if (requestedModel != null) "Back to game" else if (portion) "Back to dish" else "Back to night market")
                         }
                     }
                 }

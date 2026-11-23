@@ -17,9 +17,6 @@ jobs:
           repository: vivienk/peekaplate-xr
           ref: 5df77776d0ea9e2122d464d047e4f74fd4dc5e70
           path: xr-source
-          sparse-checkout: |
-            public/supplied-dishes
-            src/glimmer
       - name: Stage and verify bundled dishes
         run: |
           if [ -d xr-source ]; then
@@ -31,6 +28,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Build and test the bundled Night Market game
+        working-directory: xr-source
+        run: |
+          git apply ../pico/game-portion.patch
+          npm ci --onnxruntime-node-install-cuda=skip
+          npm run typecheck
+          npm test
+          npm run build
+          mv dist ../dist
+          test -s ../dist/index.html
       - name: Verify PICO CLI 0.7
         run: |
           npm install --prefix "$RUNNER_TEMP/pico-cli" @picoxr/pico-cli@0.7
