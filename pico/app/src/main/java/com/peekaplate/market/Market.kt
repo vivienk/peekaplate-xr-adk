@@ -37,7 +37,7 @@ class LaunchActivity : SpatialLaunchActivity() {
 class MarketApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        if (getProcessName().endsWith(":portion")) launch(::marketApp)
+        if (getProcessName() == packageName) launch(::marketApp)
     }
 }
 
