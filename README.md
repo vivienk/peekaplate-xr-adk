@@ -2,6 +2,8 @@
 
 Explore a pixel-art night market and see your meal in 3D before you order. Walk through three districts, visit Noka Ramen or Farm House Thai, compare dishes, and select **View Portion** to inspect a featured dish in a native PICO spatial viewer.
 
+**[Open Night Market 2049 in WebXR](https://peekaplate-xr.vercel.app/)**
+
 ## Download the submitted PICO build
 
 **App version 0.1.0 · PICO Spatial SDK 6.2.8 · Android package `com.peekaplate.market`**
