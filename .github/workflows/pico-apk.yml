@@ -32,7 +32,7 @@ jobs:
         working-directory: xr-source
         run: |
           git apply ../pico/game-portion.patch
-          npm ci
+          npm ci --onnxruntime-node-install-cuda=skip
           npm run typecheck
           npm test
           npm run build
