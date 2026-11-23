@@ -66,7 +66,7 @@ configurations.all {
 }
 
 val prepareDishAssets by tasks.registering(Sync::class) {
-    from(rootProject.file("../public/supplied-dishes")) { include("*.glb", "*-approved-pixel.png") }
+    from(rootProject.file("../public/supplied-dishes")) { include("noka-steak-ramen.glb", "thai-chicken-bowl.glb") }
     from(rootProject.file("../src/glimmer/supplied-dishes.json"))
     into(layout.buildDirectory.dir("dish-assets"))
 }
