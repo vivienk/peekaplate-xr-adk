@@ -49,7 +49,7 @@ jobs:
           curl -fsSL https://artifact.bytedance.com/repository/Volcengine/com/pico/spatial/bom/maven-metadata.xml -o "$RUNNER_TEMP/pico-bom.xml"
           SDK_VERSION=$(python3 -c 'import re,sys,xml.etree.ElementTree as E; versions=[v.text for v in E.parse(sys.argv[1]).findall(".//versions/version") if re.fullmatch(r"[0-9]+(?:\.[0-9]+)+",v.text or "")]; print(max(versions,key=lambda v:tuple(map(int,v.split(".")))))' "$RUNNER_TEMP/pico-bom.xml")
           echo "PICO Spatial SDK $SDK_VERSION"
-          gradle -PpicoSpatialSdk="$SDK_VERSION" :app:assembleDebug
+          gradle -PpicoSpatialSdk="$SDK_VERSION" :app:testDebugUnitTest :app:assembleDebug
           cd app/build/outputs/apk/debug
           sha256sum app-debug.apk > SHA256SUMS
           echo "$GITHUB_SHA SDK=$SDK_VERSION" > BUILD.txt

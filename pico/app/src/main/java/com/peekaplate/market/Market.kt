@@ -49,8 +49,9 @@ private fun menu(context: Context): List<Dish> {
 private fun Market() {
     val context = LocalContext.current
     val dishes = remember { menu(context) }
-    var selected by remember { mutableStateOf<Dish?>(null) }
-    var portion by remember { mutableStateOf(false) }
+    var route by remember { mutableStateOf(MarketRoute()) }
+    val selected = dishes.find { it.model == route.model }
+    val portion = route.portion
     var rotation by remember { mutableFloatStateOf(0f) }
     var ready by remember { mutableStateOf(false) }
     val models = remember { mutableMapOf<String, Entity>() }
@@ -70,7 +71,14 @@ private fun Market() {
                 try {
                     val model = Entity.loadSuspend(uriString = "asset://" + dish.model)
                     model.enabled = false
-                    model.components[TransformComponent::class.java]?.setPosition(Vector3(0f, -.12f, .18f))
+                    // Normalize each bundled mesh to the XR client's 27 cm reference plate.
+                    val ramen = dish.model == "noka-steak-ramen.glb"
+                    val scale = .27f / if (ramen) 1.6762f else .9811f
+                    val baseOffset = if (ramen) .9544f * scale else 0f
+                    model.components[TransformComponent::class.java]?.apply {
+                        setScaleVector(Vector3(scale))
+                        setPosition(Vector3(0f, -.12f + baseOffset, .18f))
+                    }
                     content.addEntity(model)
                     models[dish.model] = model
                 } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -91,7 +99,7 @@ private fun Market() {
                     Text(if (dish == null) "Night Market 2049" else dish.venue, color = Color.White, fontSize = 32.sp)
                     if (dish == null) {
                         dishes.forEach { item ->
-                            Button(onClick = { selected = item }) { Text(item.venue + " · " + item.name) }
+                            Button(onClick = { route = route.open(item.model) }) { Text(item.venue + " · " + item.name) }
                         }
                     } else {
                         Text(dish.name + " · " + dish.price, color = Color.White, fontSize = 25.sp)
@@ -100,11 +108,11 @@ private fun Market() {
                             Text("Illustrative 3D portion", color = Color.White)
                             Button(onClick = { rotation = (rotation + 45f) % 360f }) { Text("Rotate dish") }
                         } else {
-                            Button(onClick = { rotation = 0f; portion = true }, enabled = ready && models.containsKey(dish.model)) {
+                            Button(onClick = { rotation = 0f; route = route.preview(models.containsKey(dish.model)) }, enabled = ready && models.containsKey(dish.model)) {
                                 Text(if (!ready) "Loading portion…" else if (models.containsKey(dish.model)) "View portion" else "Portion unavailable")
                             }
                         }
-                        Button(onClick = { if (portion) portion = false else selected = null }) {
+                        Button(onClick = { route = route.back() }) {
                             Text(if (portion) "Back to dish" else "Back to night market")
                         }
                     }
