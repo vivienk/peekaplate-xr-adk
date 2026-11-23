@@ -10,3 +10,18 @@
 +   }
 +   this.id=id;this.portalReturn=from;this.a.portalDishId=id;this.a.setScreen('ar');this.a.onEnterPortal();if(this.a.arSupported&&!this.a.immersive)this.a.onXR();}
   close(){const a=this.a;if(a.screen==='ar'){if(this.portalReturn==='dish')this.id=a.portalDishId;a.setScreen(this.portalReturn);return true;}if(a.screen==='dish'){a.setScreen(this.returnTo);return true;}if(a.screen==='search'){a.setScreen(this.searchReturn);return true;}if(a.screen==='comparePicker'){a.setScreen(this.pickerReturn);return true;}if(a.screen==='comparison'){this.id=this.comparisonAnchor;this.returnTo=this.compareOrigin;a.setScreen('dish');return true;}return false;}
+--- a/tests/glimmer-assets.test.ts
++++ b/tests/glimmer-assets.test.ts
+@@ -80,6 +80,11 @@
+       const original = m.extras.originalMTL;
+       const linear = (x: number) => x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+-      expect(m.pbrMetallicRoughness.baseColorFactor).toEqual([...original.Kd.map(linear), original.d]);
++      const color = m.pbrMetallicRoughness.baseColorFactor;
++      expect(color).toHaveLength(4);
++      original.Kd.forEach((channel: number, index: number) => {
++        expect(Math.abs(color[index] - linear(channel))).toBeLessThanOrEqual(Number.EPSILON);
++      });
++      expect(color[3]).toBe(original.d);
+       expect(m.alphaMode).toBe(original.d < 1 ? 'BLEND' : 'OPAQUE');
+       expect(m.doubleSided).toBe(false);
+     }
