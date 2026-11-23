@@ -4,9 +4,8 @@
 
     <application
         android:name=".MarketApplication"
-
-
-
+        android:icon="@drawable/peekaplate_launcher"
+        android:roundIcon="@drawable/peekaplate_launcher"
         android:label="PeekaPlate XR"
 
         android:supportsRtl="true"
